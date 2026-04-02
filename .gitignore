@@ -44,3 +44,8 @@ genai-env/
 # Local configuration
 .env
 .env.local
+
+main.py
+uv.lock
+.python-version
+pyproject.toml
