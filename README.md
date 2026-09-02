@@ -1,126 +1,83 @@
-# TP1 ArtBench-10 Generative Modeling Project
+# ArtBench-10 Generative Modelling
 
-## 📁 Project Structure
+Comparing generative models — **VAE**, **cVAE**, **DCGAN**, **WGAN-GP**, and a **Diffusion model** — trained from scratch on [ArtBench-10](https://www.kaggle.com/datasets/alexanderliao/artbench10), a dataset of 60,000 32×32 artwork images spanning 10 artistic styles. Model quality is compared using FID and KID scores against real samples.
+
+This was built as a project for the *Generative Modelling* course of the Master's in Data Science (MIACD).
+
+## Approach
+
+1. **Phase 1 — Development (20% subset):** all five models are trained and evaluated on a fixed 20% training split (`data/training_20_percent.csv`) to quickly compare architectures via FID/KID.
+2. **Phase 2 — Final evaluation (100% dataset):** the best-performing model from Phase 1 is retrained on the full dataset across multiple random seeds to obtain robust FID/KID statistics (mean ± std).
+
+### Phase 1 results (20% subset, single seed)
+
+| Model     | FID     | KID (mean ± std)     |
+|-----------|---------|-----------------------|
+| VAE       | 154.01  | 0.0643 ± 0.0036      |
+| cVAE      | 165.80  | 0.0687 ± 0.0031      |
+| DCGAN     | 80.58   | 0.0308 ± 0.0033      |
+| WGAN-GP   | 119.18  | 0.0486 ± 0.0037      |
+| **Diffusion** | **40.34** | **0.0134 ± 0.0018** |
+
+Lower is better for both metrics. The Diffusion model was selected as the best performer and retrained on the full dataset in Phase 2.
+
+## Project structure
 
 ```
-TP1-alunos-src-only/
-├── src/                              # Python utilities
-│   └── artbench_local_dataset.py     # Dataset loading helper
-│
-├── notebooks/                        # Jupyter notebooks
-│   └── ArtBench10_Student_Start_Pack.ipynb  # Main project notebook
-│
-├── data/                             # ⭐ Dataset & Training Splits
-│   ├── artbench-10-python/
-│   │   └── artbench-10-batches-py/   # Full ArtBench-10 (Python pickle format)
-│   ├── artbench-10-binary/
-│   │   └── artbench-10-batches-bin/  # Binary format
-│   ├── ArtBench-10.csv               # Dataset metadata and labels
-│   └── training_20_percent.csv       # 20% training subset definition
-│
-├── .gitignore                        # Git ignore rules
-└── README.md                         # This file
+.
+├── notebooks/
+│   └── ArtBench10_Student.ipynb    # Orchestrates data loading, training, and evaluation using src/
+├── src/
+│   ├── artbench_local_dataset.py   # Loads ArtBench-10 from local Kaggle-format files into a Hugging Face DatasetDict
+│   ├── data.py                     # PyTorch Dataset/transform/dataloader helpers
+│   ├── models.py                   # VAE, cVAE, DCGAN, WGAN-GP, and Diffusion (DDPM) architectures
+│   ├── losses.py                   # VAE/cVAE ELBO loss and WGAN-GP gradient penalty
+│   ├── training.py                 # Training loops for each model
+│   ├── sampling.py                 # Sample generation from trained models
+│   ├── metrics.py                  # FID/KID evaluation via Inception-v3 features
+│   ├── viz.py                      # Plotting and sample-grid visualization
+│   └── utils.py                    # Seeding and results-reporting helpers
+├── data/
+│   ├── artbench-10-python/         # ArtBench-10 in Python pickle format (used by the notebook)
+│   ├── artbench-10-binary/         # ArtBench-10 in binary batch format
+│   ├── ArtBench-10.csv             # Dataset metadata and labels
+│   └── training_20_percent.csv     # Phase 1 training subset definition
+└── requirements.txt
 ```
 
-## 🚀 Getting Started
+## Setup
 
-### 1. Setup Environment
 ```bash
-cd TP1-alunos-src-only/
-# Create virtual environment (optional)
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### 2. Install Dependencies
+The dataset is already included under `data/`, so no download step is needed.
+
+## Running
+
 ```bash
-pip install torch torchvision numpy pandas matplotlib seaborn scipy scikit-learn jupyter
+jupyter notebook notebooks/ArtBench10_Student.ipynb
 ```
 
-### 3. Data Already Available
+Run the cells in order: dataset loading → dataloaders → model definitions → Phase 1 training/evaluation → Phase 2 final training on the full dataset.
 
-The full ArtBench-10 dataset (363MB) is already included in the `data/` folder:
-```
-data/
-├── artbench-10-python/artbench-10-batches-py/  (used by the notebook)
-├── artbench-10-binary/artbench-10-batches-bin/
-├── ArtBench-10.csv
-└── training_20_percent.csv                    (training split)
-```
+## Models
 
-**No additional setup needed** — the notebook will automatically load from `./data/`
+- **VAE** — encoder/decoder with a reparameterized Gaussian latent space; reconstruction + KL loss.
+- **cVAE** — VAE conditioned on class labels for controlled, class-consistent generation.
+- **DCGAN** — convolutional generator/discriminator trained adversarially.
+- **WGAN-GP** — Wasserstein GAN with a gradient penalty for more stable adversarial training.
+- **Diffusion** — a UNet trained to reverse a fixed Gaussian noising process (DDPM-style).
 
-### 4. Run Notebook
-```bash
-cd notebooks/
-jupyter notebook ArtBench10_Student_Start_Pack.ipynb
-```
+## Authors
 
-## 📋 Directory Descriptions
+- Íris Sousa
+- Bernardo Pedro
 
-| Directory | Purpose |
-|-----------|---------|
-| **src/** | Reusable Python utilities for data loading and processing |
-| **notebooks/** | Jupyter notebooks for experimentation and analysis |
-| **data/** | ⭐ Full ArtBench-10 dataset (363MB) + training split definitions |
+## References
 
-## 🔧 Key Components
-
-### `src/artbench_local_dataset.py`
-Provides the `load_kaggle_artbench10_splits()` function to load ArtBench-10 data from local directories.
-
-### `notebooks/ArtBench10_Student_Start_Pack.ipynb`
-Complete training pipeline including:
-- ✅ Data loading and preprocessing
-- ✅ PyTorch DataLoader creation
-- ✅ Visualization utilities
-- ✅ VAE, DCGAN, and Diffusion model implementations
-- ✅ Training loops
-- ✅ Evaluation metrics (FID, KID)
-- ✅ Sample generation
-
-### `data/training_20_percent.csv`
-Defines the 20% training subset for rapid model development and testing.
-
-## 📝 Project Workflow
-
-### Phase 1: Development (on 20% subset)
-1. Load data using `train_loader_from_csv`
-2. Train all three models (VAE, DCGAN, Diffusion)
-3. Generate samples and compute FID/KID
-4. Select best model based on metrics
-
-### Phase 2: Final Evaluation (on 100% dataset)
-1. Retrain best model with ≥10 random seeds
-2. Aggregate FID/KID scores (mean ± std)
-3. Generate final report with visualizations
-
-## 🎯 Expected Outcomes
-
-For each model on full dataset (≥10 seeds):
-- **FID (Fréchet Inception Distance)**: Mean ± Std
-- **KID (Kernel Inception Distance)**: Mean ± Std  
-- **Sample visualizations**: Grid of generated artworks
-- **Training curves**: Loss progression over epochs
-
-## 📚 References
-
-- PyTorch: https://pytorch.org/
-- ArtBench-10: https://www.kaggle.com/datasets/alexanderliao/artbench10
-- FID Paper: https://arxiv.org/abs/1706.08500
-- Diffusion Models: https://arxiv.org/abs/2006.11239
-
-## ✅ Checklist
-
-- [ ] Data directory configured with ArtBench-10
-- [ ] Virtual environment created and activated
-- [ ] Dependencies installed
-- [ ] Notebook runs without errors
-- [ ] Phase 1 (20% subset) training completed
-- [ ] Best model selected
-- [ ] Phase 2 (100% dataset) training completed
-- [ ] Final report generated
-
----
-
-**Last Updated**: 2026-03-23
+- [ArtBench-10 dataset](https://www.kaggle.com/datasets/alexanderliao/artbench10)
+- [FID: GANs Trained by a Two Time-Scale Update Rule](https://arxiv.org/abs/1706.08500)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)
