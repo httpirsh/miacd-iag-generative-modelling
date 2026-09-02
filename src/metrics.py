@@ -60,8 +60,6 @@ def extract_features_from_tensor(samples_tensor, feature_extractor, device, batc
     """Extract Inception features from tensor samples (expects samples in [-1,1])."""
     all_features = []
 
-    print(f"[DEBUG] Samples range BEFORE extractor: min={samples_tensor.min().item():.4f}, max={samples_tensor.max().item():.4f}")
-
     with torch.no_grad():
         for i in range(0, len(samples_tensor), batch_size):
             batch = samples_tensor[i:i + batch_size].to(device)
